@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EmbeddingStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  phone        String?  @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  faces        Face[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  tokenHash  String   @unique
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  revoked    Boolean  @default(false)
+  ip         String?
+  userAgent  String?
+}
+
+model Face {
+  id              String          @id @default(uuid())
+  user            User            @relation(fields: [userId], references: [id])
+  userId          String
+  s3Key           String
+  label           String?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  embeddingStatus EmbeddingStatus @default(PENDING)
+  embedding       Embedding?
+}
+
+model Embedding {
+  id        String   @id @default(uuid())
+  face      Face?    @relation(fields: [faceId], references: [id])
+  faceId    String?  @unique
+  vector    Json
+  createdAt DateTime @default(now())
+}
+
+model ScanRequest {
+  id          String   @id @default(uuid())
+  requesterId String
+  targetId    String
+  status      String   @default("PENDING")
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  fromUserId  String
+  toUserId    String
+  amountCents Int
+  currency    String
+  status      String   @default("PENDING")
+  metadata    Json?
+  createdAt   DateTime @default(now())
+}
