@@ -7,73 +7,141 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum EmbeddingStatus {
-  PENDING
-  READY
-  FAILED
-}
-
 model User {
-  id           String   @id @default(uuid())
+  id           String   @id @default(cuid())
+  name         String
   email        String   @unique
-  phone        String?  @unique
-  passwordHash String
-  name         String?
+  phone        String?
+  profilePhoto String?
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  faces        Face[]
-  refreshTokens RefreshToken[]
+  faceProfiles FaceProfile[]
+  links        UserLink[]
+  paymentMethods UserPaymentMethod[]
+  scanModes    UserScanRule[]
+  wallets      UserWallet[]
+  transactionsSent Transaction[] @relation("SentTransactions")
+  transactionsReceived Transaction[] @relation("ReceivedTransactions")
+  approvals    Approval[]
 }
 
-model RefreshToken {
-  id         String   @id @default(uuid())
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String
-  tokenHash  String   @unique
-  createdAt  DateTime @default(now())
-  expiresAt  DateTime
-  revoked    Boolean  @default(false)
-  ip         String?
-  userAgent  String?
-}
-
-model Face {
-  id              String          @id @default(uuid())
-  user            User            @relation(fields: [userId], references: [id])
-  userId          String
-  s3Key           String
-  label           String?
-  isActive        Boolean         @default(true)
-  createdAt       DateTime        @default(now())
-  embeddingStatus EmbeddingStatus @default(PENDING)
-  embedding       Embedding?
-}
-
-model Embedding {
-  id        String   @id @default(uuid())
-  face      Face?    @relation(fields: [faceId], references: [id])
-  faceId    String?  @unique
-  vector    Json
+model FaceProfile {
+  id        String   @id @default(cuid())
+  userId    String
+  faceHash  String
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
-model ScanRequest {
+model SecuritySetting {
+  id          String   @id @default(cuid())
+  userId      String
+  gesturePin  String? // hashed
+  twoFA       Boolean  @default(false)
+  defaultScanMode String?
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model UserLink {
+  id      String @id @default(cuid())
+  userId  String
+  type    String
+  value   String
+  user    User   @relation(fields: [userId], references: [id])
+}
+
+model UserPaymentMethod {
+  id       String @id @default(cuid())
+  userId   String
+  provider String
+  account  String
+  user     User   @relation(fields: [userId], references: [id])
+}
+
+model ScanMode {
+  id      String @id @default(cuid())
+  name    String
+  context String?
+}
+
+model UserScanRule {
+  id         String @id @default(cuid())
+  userId     String
+  scanModeId String
+  user       User     @relation(fields: [userId], references: [id])
+  scanMode   ScanMode @relation(fields: [scanModeId], references: [id])
+}
+
+model Transaction {
+  id           String   @id @default(cuid())
+  senderId     String
+  receiverId   String
+  amount       Float
+  status       String
+  createdAt    DateTime @default(now())
+  sender       User     @relation("SentTransactions", fields: [senderId], references: [id])
+  receiver     User     @relation("ReceivedTransactions", fields: [receiverId], references: [id])
+}
+
+model PendingRequest {
   id          String   @id @default(uuid())
   requesterId String
   targetId    String
-  status      String   @default("PENDING")
-  metadata    Json?
+  type        String   // e.g., "payment", "id", "social"
+  amount      Float?   // only for payments
+  currency    String?  // optional
+  meta        Json?    // any other metadata (e.g., requested document type)
+  status      String   @default("pending") // pending, approved, rejected
   createdAt   DateTime @default(now())
-  expiresAt   DateTime?
 }
 
-model Payment {
+model Transaction {
   id          String   @id @default(uuid())
-  fromUserId  String
-  toUserId    String
-  amountCents Int
+  senderId    String
+  receiverId  String
+  amount      Float
   currency    String
-  status      String   @default("PENDING")
-  metadata    Json?
+  status      String   @default("completed") // pending, completed, failed
+  reference   String   @unique
+  meta        Json?
   createdAt   DateTime @default(now())
+}
+
+model UserWallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  balance   Float    @default(0)
+  currency  String
+  updatedAt DateTime @updatedAt
+}
+
+model PendingRequest {
+  id          String   @id @default(uuid())
+  requesterId String
+  targetId    String
+  type        String
+  amount      Float?
+  currency    String?
+  meta        Json?
+  status      String   @default("pending") // pending, approved, rejected
+  createdAt   DateTime @default(now())
+}
+
+model Approval {
+  id          String   @id @default(uuid())
+  requestId   String
+  approverId  String
+  method      String // "gesture", "pin", "both"
+  createdAt   DateTime @default(now())
+}
+
+model Gesture {
+  id    String @id @default(cuid())
+  type  String
+}
+
+model DeviceSession {
+  id        String   @id @default(cuid())
+  userId    String
+  active    Boolean
+  createdAt DateTime @default(now())
 }
