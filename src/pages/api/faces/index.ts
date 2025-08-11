@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import formidable from "formidable";
 import fs from "fs/promises";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { prisma } from "@/lib/prisma";
 import { verifyAccessToken } from "@/lib/auth";
 
@@ -47,7 +47,7 @@ export default async function handler(
     const bucket = process.env.SUPABASE_BUCKET!;
     const key = `faces/${userId}/${Date.now()}-${file.originalFilename}`;
 
-    const { data, error: uploadErr } = await supabaseAdmin.storage
+    const { data, error: uploadErr } = await supabase.storage
       .from(bucket)
       .upload(key, buffer, { upsert: false });
 
