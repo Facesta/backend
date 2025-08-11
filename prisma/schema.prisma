@@ -7,6 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  ip        String?
+  userAgent String?
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
 model User {
   id                   String              @id @default(cuid())
   name                 String
@@ -29,6 +44,7 @@ model User {
   Gesture              Gesture[]
   DeviceSession        DeviceSession[]
   ScanContext          ScanContext[]
+  RefreshToken         RefreshToken[]
 }
 
 model FaceProfile {
