@@ -56,7 +56,7 @@ export default async function handler(
       ? await bcryptjs.hash(parsed.gesturePin, 10)
       : null;
 
-    const newUser = await prisma.$transaction(async (tx) => {
+    const newUser = await prisma.$transaction(async (tx: any) => {
       const user = await tx.user.create({
         data: {
           name: parsed.name,
