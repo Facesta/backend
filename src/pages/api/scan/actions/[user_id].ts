@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -17,13 +20,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Step 1: Get the user’s scan mode
     const scanMode = await prisma.scanMode.findFirst({
       where: {
-        userScanRules: {
-          some: { userId: user_id }
-        }
+        rules: {
+          some: { userId: user_id },
+        },
       },
       include: {
-        allowedActions: true // hypothetical relation
-      }
+        allowedActions: true, // hypothetical relation
+      },
     });
 
     if (!scanMode) {
@@ -34,17 +37,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let allowedActions = scanMode.allowedActions || [];
     if (context) {
       allowedActions = allowedActions.filter(
-        a => a.context === context || a.context === "any"
+        (a) => a.context === context || a.context === "any"
       );
     }
 
     res.status(200).json({
       userId: user_id,
       scanMode: scanMode.name,
-      actions: allowedActions.map(a => ({
+      actions: allowedActions.map((a) => ({
         type: a.type,
-        value: a.value
-      }))
+        value: a.value,
+      })),
     });
   } catch (error: any) {
     console.error(error);

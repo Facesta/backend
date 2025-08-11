@@ -47,7 +47,9 @@ export default async function handler(
       data: {
         requestId: String(id),
         approverId,
-        method: "rejected", // keeping same column for tracking
+        method: "rejected",
+        reason: "User rejected request",
+        approver: { connect: { id: approverId } } 
       },
     });
 

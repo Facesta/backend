@@ -19,7 +19,7 @@ export default async function handler(
 
     // Step 1: Find matching face profile
     const faceProfile = await prisma.faceProfile.findFirst({
-      where: { faceHash },
+      where: { encryptedVector: faceHash },
     });
 
     if (!faceProfile) {
@@ -40,12 +40,12 @@ export default async function handler(
     // Step 3: Get scan mode (global or user-specific)
     const scanMode = await prisma.scanMode.findFirst({
       where: {
-        userScanRules: {
+        rules: {
           some: { userId: user?.id },
         },
       },
       include: {
-        allowedActions: true, // hypothetical relation
+        allowedActions: true,
       },
     });
 

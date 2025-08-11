@@ -15,7 +15,7 @@ export default async function handler(
   try {
     // Store active context in device_sessions
     const session = await prisma.deviceSession.upsert({
-      where: { userId },
+      where: { id: userId },
       update: { activeContextId: contextId },
       create: {
         userId,

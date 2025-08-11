@@ -58,6 +58,8 @@ export default async function handler(
         requestId: String(id),
         approverId,
         method: pin && gestureData ? "both" : pin ? "pin" : "gesture",
+        reason: "User rejected request",
+        approver: { connect: { id: approverId } },
       },
     });
 

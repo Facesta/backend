@@ -20,7 +20,11 @@ export default async function handler(
     const userRules = await prisma.userScanRule.findMany({
       where: { userId: String(user_id) },
       include: {
-        scanMode: true,
+        scanMode: {
+          include: {
+            allowedActions: true, // ✅ must include here
+          },
+        },
       },
     });
 
@@ -36,8 +40,12 @@ export default async function handler(
         id: rule.scanMode.id,
         name: rule.scanMode.name,
         description: rule.scanMode.description,
-        allowed_actions: rule.allowedActions,
-        context: rule.context,
+        allowed_actions: rule.scanMode.allowedActions.map((a) => ({
+          type: a.type,
+          value: a.value,
+          context: a.context,
+        })),
+        context: rule.scanMode.context,
       })),
     });
   } catch (error: any) {

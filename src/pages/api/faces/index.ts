@@ -56,17 +56,16 @@ export default async function handler(
       return res.status(500).json({ error: "Storage upload failed" });
     }
 
-    const face = await prisma.face.create({
+    const faceProfile = await prisma.faceProfile.create({
       data: {
         userId,
-        s3Key: key,
+        imageKey: key,
         label: (fields.label as unknown as string) ?? "primary",
         embeddingStatus: "PENDING",
       },
     });
 
-    // The worker will pick up pending faces to compute embeddings
-    res.status(201).json({ face, upload: data });
+    res.status(201).json({ faceProfile, upload: data });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Upload failed" });

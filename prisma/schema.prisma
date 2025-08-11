@@ -8,45 +8,56 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  phone        String?
-  profilePhoto String?
-  createdAt    DateTime @default(now())
-  faceProfiles FaceProfile[]
-  links        UserLink[]
-  paymentMethods UserPaymentMethod[]
-  scanModes    UserScanRule[]
-  wallets      UserWallet[]
-  transactionsSent Transaction[] @relation("SentTransactions")
-  transactionsReceived Transaction[] @relation("ReceivedTransactions")
-  approvals    Approval[]
+  id                   String              @id @default(cuid())
+  name                 String
+  email                String              @unique
+  phone                String?
+  profilePhoto         String?
+  passwordHash         String // store bcrypt/argon2 hash
+  createdAt            DateTime            @default(now())
+  faceProfiles         FaceProfile[]
+  links                UserLink[]
+  paymentMethods       UserPaymentMethod[]
+  scanModes            UserScanRule[]
+  wallets              UserWallet[]
+  transactionsSent     Transaction[]       @relation("SentTransactions")
+  transactionsReceived Transaction[]       @relation("ReceivedTransactions")
+  approvals            Approval[]
+  securitySettings     SecuritySetting[]
+  sentRequests         PendingRequest[]    @relation("SentRequests")
+  receivedRequests     PendingRequest[]    @relation("ReceivedRequests")
+  Gesture              Gesture[]
+  DeviceSession        DeviceSession[]
+  ScanContext          ScanContext[]
 }
 
 model FaceProfile {
-  id        String   @id @default(cuid())
-  userId    String
-  faceHash  String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  id              String   @id @default(cuid())
+  userId          String
+  imageKey        String? // S3 key for the profile picture
+  encryptedVector String? // Encrypted biometric data
+  embeddingStatus String   @default("PENDING") // or COMPLETED
+  label           String? // e.g. "primary"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id])
 }
 
 model SecuritySetting {
-  id          String   @id @default(cuid())
-  userId      String
-  gesturePin  String? // hashed
-  twoFA       Boolean  @default(false)
+  id              String  @id @default(cuid())
+  userId          String
+  gesturePin      String? // hashed
+  twoFA           Boolean @default(false)
   defaultScanMode String?
-  user        User     @relation(fields: [userId], references: [id])
+  user            User    @relation(fields: [userId], references: [id])
 }
 
 model UserLink {
-  id      String @id @default(cuid())
-  userId  String
-  type    String
-  value   String
-  user    User   @relation(fields: [userId], references: [id])
+  id     String @id @default(cuid())
+  userId String
+  type   String
+  value  String
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 model UserPaymentMethod {
@@ -58,52 +69,73 @@ model UserPaymentMethod {
 }
 
 model ScanMode {
-  id      String @id @default(cuid())
-  name    String
-  context String?
+  id             String          @id @default(cuid())
+  name           String
+  context        String?
+  rules          UserScanRule[]
+  allowedActions AllowedAction[] // relation instead of scalar array
+  DeviceSession  DeviceSession[]
+  description    String?
+  ScanContext    ScanContext[]
 }
 
-model UserScanRule {
-  id         String @id @default(cuid())
-  userId     String
+model ScanContext {
+  id            String    @id @default(cuid())
+  userId        String
+  scanModeId    String
+  isActive      Boolean   @default(true)
+  startedAt     DateTime  @default(now())
+  endedAt       DateTime?
+  user          User      @relation(fields: [userId], references: [id])
+  scanMode      ScanMode  @relation(fields: [scanModeId], references: [id])
+  context_rules Json?
+}
+
+model AllowedAction {
+  id         String   @id @default(cuid())
+  type       String
+  value      String
+  context    String
   scanModeId String
-  user       User     @relation(fields: [userId], references: [id])
   scanMode   ScanMode @relation(fields: [scanModeId], references: [id])
 }
 
-model Transaction {
-  id           String   @id @default(cuid())
-  senderId     String
-  receiverId   String
-  amount       Float
-  status       String
-  createdAt    DateTime @default(now())
-  sender       User     @relation("SentTransactions", fields: [senderId], references: [id])
-  receiver     User     @relation("ReceivedTransactions", fields: [receiverId], references: [id])
+model UserScanRule {
+  id             String   @id @default(cuid())
+  userId         String
+  scanModeId     String
+  allowedActions String[] // Add this as a scalar list of strings for allowed actions
+  context        String? // Optional context for the rule
+  user           User     @relation(fields: [userId], references: [id])
+  scanMode       ScanMode @relation(fields: [scanModeId], references: [id])
 }
 
 model PendingRequest {
   id          String   @id @default(uuid())
-  requesterId String
-  targetId    String
-  type        String   // e.g., "payment", "id", "social"
-  amount      Float?   // only for payments
-  currency    String?  // optional
-  meta        Json?    // any other metadata (e.g., requested document type)
+  requesterId String // User making the request
+  targetId    String // User receiving the request
+  type        String // "payment", "id", "social", etc.
+  amount      Float? // Only for payment requests
+  currency    String? // Optional, for multi-currency support
+  meta        Json? // Flexible: e.g. requested document type, notes
   status      String   @default("pending") // pending, approved, rejected
   createdAt   DateTime @default(now())
+  requester   User     @relation("SentRequests", fields: [requesterId], references: [id])
+  target      User     @relation("ReceivedRequests", fields: [targetId], references: [id])
 }
 
 model Transaction {
-  id          String   @id @default(uuid())
-  senderId    String
-  receiverId  String
-  amount      Float
-  currency    String
-  status      String   @default("completed") // pending, completed, failed
-  reference   String   @unique
-  meta        Json?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  amount     Float
+  currency   String
+  status     String   @default("pending") // pending, completed, failed
+  reference  String   @unique
+  meta       Json?
+  createdAt  DateTime @default(now())
+  sender     User     @relation("SentTransactions", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceivedTransactions", fields: [receiverId], references: [id])
 }
 
 model UserWallet {
@@ -112,36 +144,34 @@ model UserWallet {
   balance   Float    @default(0)
   currency  String
   updatedAt DateTime @updatedAt
-}
-
-model PendingRequest {
-  id          String   @id @default(uuid())
-  requesterId String
-  targetId    String
-  type        String
-  amount      Float?
-  currency    String?
-  meta        Json?
-  status      String   @default("pending") // pending, approved, rejected
-  createdAt   DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Approval {
-  id          String   @id @default(uuid())
-  requestId   String
-  approverId  String
-  method      String // "gesture", "pin", "both"
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  requestId  String
+  approverId String
+  method     String // "gesture", "pin", "both"
+  createdAt  DateTime @default(now())
+  reason     String
+  approver   User     @relation(fields: [approverId], references: [id])
 }
 
 model Gesture {
-  id    String @id @default(cuid())
-  type  String
+  id     String @id @default(cuid())
+  userId String
+  type   String
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 model DeviceSession {
-  id        String   @id @default(cuid())
-  userId    String
-  active    Boolean
-  createdAt DateTime @default(now())
+  id              String    @id @default(cuid())
+  userId          String
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  user            User      @relation(fields: [userId], references: [id])
+  activeContextId String?
+  activeContext   ScanMode? @relation(fields: [activeContextId], references: [id])
+  context_rules   Json?
 }

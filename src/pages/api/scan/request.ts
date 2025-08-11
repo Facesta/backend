@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 async function getAllowedActions(userId: string) {
   const session = await prisma.deviceSession.findUnique({
-    where: { userId },
+    where: { id: userId },
     include: { activeContext: true },
   });
 
@@ -13,12 +13,17 @@ async function getAllowedActions(userId: string) {
   const rules = await prisma.userScanRule.findMany({
     where: {
       userId,
-      context: session.activeContext.name,
+      scanMode: { context: session.activeContext?.context },
+    },
+    include: {
+      scanMode: {
+        include: { allowedActions: true },
+      },
     },
   });
 
-  // Merge allowed actions from rules
-  return rules.flatMap((r) => r.allowedActions);
+  // Now TypeScript knows scanMode.allowedActions exists
+  return rules.flatMap((r) => r.scanMode.allowedActions);
 }
 
 export default async function handler(
@@ -41,9 +46,11 @@ export default async function handler(
     const targetAllowed = await getAllowedActions(targetId);
 
     // Find intersection
-    const allowedIntersection = scannerAllowed.filter((a) =>
-      targetAllowed.includes(a)
-    );
+    // Ensure both are arrays before comparing
+    const allowedIntersection =
+      Array.isArray(scannerAllowed) && Array.isArray(targetAllowed)
+        ? scannerAllowed.filter((a) => targetAllowed.includes(a))
+        : [];
 
     if (!allowedIntersection.includes(type)) {
       return res
@@ -53,14 +60,21 @@ export default async function handler(
 
     // If payment, check amount & limits
     if (type === "payment" && amount) {
-      const targetSession = await prisma.deviceSession.findUnique({
+      const targetSession = await prisma.deviceSession.findFirst({
         where: { userId: targetId },
         include: { activeContext: true },
       });
 
-      const limits =
-        targetSession?.activeContext?.context_rules?.payment_limits;
-      if (limits && amount > limits.max_amount) {
+      type ContextRules = {
+        payment_limits?: {
+          max_amount?: number;
+        };
+      };
+
+      const rules = targetSession?.context_rules as ContextRules | undefined;
+
+      const limits = rules?.payment_limits;
+      if (limits && amount > (limits.max_amount ?? 0)) {
         return res.status(403).json({ error: "Amount exceeds allowed limit" });
       }
     }
@@ -68,12 +82,11 @@ export default async function handler(
     // Store request
     const request = await prisma.pendingRequest.create({
       data: {
-        scannerId,
+        requesterId: scannerId,
         targetId,
         type,
         amount: amount || null,
         currency: currency || null,
-        note: note || null,
         status: "pending",
       },
     });
