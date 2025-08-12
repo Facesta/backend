@@ -29,7 +29,7 @@ export default function Hero() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-8 py-4 text-lg bg-transparent hover:cursor-pointer"
+                className="border-1 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-8 py-4 text-lg bg-transparent hover:cursor-pointer"
               >
                 <Download className="w-5 h-5 mr-2" />
                 Google Play

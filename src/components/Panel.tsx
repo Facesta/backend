@@ -165,7 +165,7 @@ export default function Panel({ activePanel, closePanel }: any) {
                 </a>
               </div>
 
-              <div className="border border-gray-200 rounded-lg p-4">
+              {/* <div className="border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-1">Live Chat</h4>
                 <p className="text-gray-600 text-sm mb-2">
                   Available Monday-Friday, 9AM-6PM EST
@@ -176,7 +176,7 @@ export default function Panel({ activePanel, closePanel }: any) {
                 >
                   Start Chat
                 </Button>
-              </div>
+              </div> */}
 
               <div className="border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-1">FAQ</h4>
@@ -184,7 +184,7 @@ export default function Panel({ activePanel, closePanel }: any) {
                   Find answers to common questions
                 </p>
                 <a
-                  href="#"
+                  href="/#faq"
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
                   View FAQ →

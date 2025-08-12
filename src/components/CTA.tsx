@@ -25,7 +25,7 @@ export default function CallToAction() {
           <Button
             size="lg"
             variant="outline"
-            className="border-2 border-white text-white hover:cursor-pointer hover:bg-white hover:text-blue-600 px-8 py-4 text-lg font-semibold bg-transparent"
+            className="border-1 border-white text-white hover:cursor-pointer hover:bg-white hover:text-blue-600 px-8 py-4 text-lg font-semibold bg-transparent"
           >
             <Download className="w-5 h-5 mr-2" />
             Download for Android
