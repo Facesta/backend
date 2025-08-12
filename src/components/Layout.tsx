@@ -5,6 +5,8 @@ import { GeistMono } from "geist/font/mono";
 import Footer from "./Footer";
 import Header from "./Header";
 import Head from "next/head";
+import { useState } from "react";
+import Panel from "./Panel";
 
 export const metadata: Metadata = {
   title: "Facesta - Connect Through Face Recognition",
@@ -18,6 +20,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [activePanel, setActivePanel] = useState<string | null>(null);
+
+  const openPanel = (panel: string) => {
+    setActivePanel(panel);
+  };
+
+  const closePanel = () => {
+    setActivePanel(null);
+  };
   return (
     <>
       <Head>
@@ -37,7 +48,8 @@ html {
         <main className="min-h-screen bg-white">
           <Header />
           {children}
-          <Footer />
+          <Footer openPanel={openPanel} />
+          <Panel activePanel={activePanel} closePanel={closePanel} />
         </main>
       </body>
     </>

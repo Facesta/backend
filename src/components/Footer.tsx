@@ -1,6 +1,6 @@
 import type React from "react";
 
-export default function Footer() {
+export default function Footer({ openPanel }: any) {
   return (
     <footer className="pt-12 px-4 bg-gray-900">
       <div className="max-w-6xl mx-auto">
@@ -14,24 +14,24 @@ export default function Footer() {
             </p>
           </div>
           <div className="flex space-x-6">
-            <a
-              href="#"
-              className="text-gray-400 hover:text-white transition-colors"
+            <button
+              onClick={() => openPanel("privacy")}
+              className="text-gray-400 hover:text-white transition-colors hover:cursor-pointer"
             >
               Privacy
-            </a>
-            <a
-              href="#"
-              className="text-gray-400 hover:text-white transition-colors"
+            </button>
+            <button
+              onClick={() => openPanel("terms")}
+              className="text-gray-400 hover:text-white transition-colors hover:cursor-pointer"
             >
               Terms
-            </a>
-            <a
-              href="#"
-              className="text-gray-400 hover:text-white transition-colors"
+            </button>
+            <button
+              onClick={() => openPanel("support")}
+              className="text-gray-400 hover:text-white transition-colors hover:cursor-pointer"
             >
               Support
-            </a>
+            </button>
           </div>
         </div>
         <div className="border-t border-gray-800 mt-2 pt-3 text-center">
